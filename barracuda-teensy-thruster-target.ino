@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <i2c_register_slave.h>
 
-int pwm_pins[4] = { 0, 1, 4, 5 };
+int PWM_PINS[4] = { 0, 1, 4, 5 };
 int frequency = 400;  // Hz
 int bit_resolution = 15;
 int default_duty_cycle_val = (1U << (bit_resolution - 1));
@@ -40,10 +40,10 @@ void setup() {
     registerSlave.listen(0x2e);
   }
   analogWriteResolution(15);
-  analogWrite(pwm_pins[0], thruster_registers.thruster_reg_0);
-  analogWrite(pwm_pins[1], thruster_registers.thruster_reg_2);
-  analogWrite(pwm_pins[2], thruster_registers.thruster_reg_4);
-  analogWrite(pwm_pins[3], thruster_registers.thruster_reg_6);
+  analogWrite(PWM_PINS[0], thruster_registers.thruster_reg_0);
+  analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_2);
+  analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_4);
+  analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_6);
 
   // Start listening
   registerSlave.after_write(on_write_isr);
@@ -59,23 +59,23 @@ void loop() {
 void on_write_isr(uint8_t reg_num, size_t num_bytes) {
   switch (reg_num) {
     case 0:
-      analogWrite(pwm_pins[0], thruster_registers.thruster_reg_0);
+      analogWrite(PWM_PINS[0], thruster_registers.thruster_reg_0);
       Serial.println("Thruster reg 0 written to: ");
       Serial.println(thruster_registers.thruster_reg_0);
       break;
     case 2:
       Serial.println("Thruster reg 2 written to: ");
-      analogWrite(pwm_pins[1], thruster_registers.thruster_reg_2);
+      analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_2);
       Serial.println(thruster_registers.thruster_reg_2);
       break;
     case 4:
       Serial.println("Thruster reg 4 written to: ");
-      analogWrite(pwm_pins[2], thruster_registers.thruster_reg_4);
+      analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_4);
       Serial.println(thruster_registers.thruster_reg_4);
       break;
     case 6:
       Serial.println("Thruster reg 6 written to: ");
-      analogWrite(pwm_pins[3], thruster_registers.thruster_reg_6);
+      analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_6);
       Serial.println(thruster_registers.thruster_reg_6);
       break;
     default:
