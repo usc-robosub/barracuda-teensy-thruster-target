@@ -7,6 +7,9 @@ int bit_resolution = 15;
 int default_duty_cycle_val = (1U << (bit_resolution - 1));
 double period = (double)1 / frequency;
 
+// hardcoded min/max vals for 256-bit resolution
+int MIN_DUTY_CYCLE = 102;
+int MAX_DUTY_CYCLE = 154;
 
 // Thruster registers (caller writes to them)
 struct ThrusterRegisters {
@@ -54,6 +57,28 @@ void setup() {
 }
 
 void loop() {
+
+	// go from middle pwm 
+	for (int i = default_duty_cycle_val; i < MAX_DUTY_CYCLE; i++) {
+		// 4 pwm pins per thruster board
+		for (int pwm_pin_idx = 0; pwm_pin_idx < 4; pwm_pin_idx++) {
+			analogWrite(PWM_PINS[pwm_pin_idx], i);
+		}
+	}
+	
+	for (int i = MAX_DUTY_CYCLE; i > 0; i--) {
+		// 4 pwm pins per thruster board
+		for (int pwm_pin_idx = 0; pwm_pin_idx < 4; pwm_pin_idx++) {
+			analogWrite(PWM_PINS[pwm_pin_idx], i);
+		}
+	}
+	
+	for (int i = 0; i < default_duty_cycle_val; i++) {
+		// 4 pwm pins per thruster board
+		for (int pwm_pin_idx = 0; pwm_pin_idx < 4; pwm_pin_idx++) {
+			analogWrite(PWM_PINS[pwm_pin_idx], i);
+		}
+	}
 }
 
 void on_write_isr(uint8_t reg_num, size_t num_bytes) {
