@@ -30,7 +30,9 @@ I2CRegisterSlave registerSlave = I2CRegisterSlave(Slave1, (uint8_t*)&thruster_re
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
 
 void setup() {
-  // analogWriteFrequency(pwm_pin, frequency);
+  for (int pin_idx = 0; pin_idx < sizeof(PWM_PINS) / sizeof(PWM_PINS[0]); pin_idx++) {
+    analogWriteFrequency(pin_idx, frequency);
+  }
 
   // assign 0x2d as i2c address if pin 2 not connected to gnd, 0x2e if pin 2 is connected to gnd
   pinMode(2, INPUT_PULLUP);
