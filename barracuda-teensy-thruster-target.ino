@@ -7,7 +7,7 @@ int bit_resolution = 15;
 int default_duty_cycle_val = (1U << (bit_resolution - 1));
 double period = (double)1 / frequency;
 
-// hardcoded min/max vals for 256-bit resolution
+// hardcoded min/max vals for 15-bit resolution
 int MIN_DUTY_CYCLE = 102;
 int MAX_DUTY_CYCLE = 154;
 
@@ -33,7 +33,7 @@ I2CRegisterSlave registerSlave = I2CRegisterSlave(Slave1, (uint8_t*)&thruster_re
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
 
 void setup() {
-  // analogWriteFrequency(pwm_pin, frequency);
+  analogWriteFrequency(pwm_pin, frequency);
 
   // assign 0x2d as i2c address if pin 2 not connected to gnd, 0x2e if pin 2 is connected to gnd
   pinMode(2, INPUT_PULLUP);
