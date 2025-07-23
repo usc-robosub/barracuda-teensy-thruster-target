@@ -1,11 +1,17 @@
 #include <Arduino.h>
 #include <i2c_register_slave.h>
 
-int PWM_PINS[4] = { 0, 1, 4, 5 };
-int frequency = 400;  // Hz
-int bit_resolution = 15;
-int default_duty_cycle_val = (1U << (bit_resolution - 1));
+int PWM_PINS[] = { 0, 1, 4, 5 };
+int frequency = 333;  // Hz
+int bit_resolution = 8;
+int default_pwm_width = 1500; // microseconds
 double period = (double)1 / frequency;
+int default_duty_cycle_val = (((double)default_pwm_width / 1000000) / period) * pow(2, bit_resolution);
+
+
+// chosen min/max pwm width vals in microseconds
+int MIN_PWM_WIDTH = 1300; // acutal min on t200 thruster datasheet is 1100
+int MAX_PWM_WIDTH = 1700; // actual max on t200 thruster datasheet is 1900
 
 
 // Thruster registers (caller writes to them)
@@ -19,7 +25,7 @@ struct ThrusterRegisters {
 // Config registers
 struct Config {
   uint16_t frequency = 400;     // Register 8
-  uint8_t bit_resolution = 15;  // Register 10
+  uint8_t bit_resolution = 8;  // Register 10
 };
 
 ThrusterRegisters thruster_registers;
