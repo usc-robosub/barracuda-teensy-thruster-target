@@ -30,7 +30,9 @@ I2CRegisterSlave registerSlave = I2CRegisterSlave(Slave1, (uint8_t*)&thruster_re
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
 
 void setup() {
-  // analogWriteFrequency(pwm_pin, frequency);
+  for (unsigned int i = 0; i < sizeof(PWM_PINS) / sizeof(*PWM_PINS); i++) {
+    analogWriteFrequency(PWM_PINS[i], frequency);
+  }
 
   // assign 0x2d as i2c address if pin 2 not connected to gnd, 0x2e if pin 2 is connected to gnd
   pinMode(2, INPUT_PULLUP);
@@ -41,9 +43,15 @@ void setup() {
   }
   analogWriteResolution(15);
   analogWrite(PWM_PINS[0], thruster_registers.thruster_reg_0);
+
+
   analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_2);
+
+
   analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_4);
+
   analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_6);
+
 
   // Start listening
   registerSlave.after_write(on_write_isr);
@@ -51,6 +59,20 @@ void setup() {
   // Enable the serial port for debugging
   Serial.begin(9600);
   Serial.println("Registers: 0, 2, 4, 6");
+
+  Serial.println("thruster reg 0:");
+  Serial.println(thruster_registers.thruster_reg_0);
+
+  Serial.println("thruster reg 2:");
+  Serial.println(thruster_registers.thruster_reg_2);
+
+  Serial.println("thruster reg 4:");
+  Serial.println(thruster_registers.thruster_reg_4);
+
+  Serial.println("thruster reg 6:");
+  Serial.println(thruster_registers.thruster_reg_6);
+
+
 }
 
 void loop() {
