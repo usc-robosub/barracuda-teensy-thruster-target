@@ -36,18 +36,23 @@ I2CRegisterSlave registerSlave = I2CRegisterSlave(Slave1, (uint8_t*)&thruster_re
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
   for (unsigned int i = 0; i < sizeof(PWM_PINS) / sizeof(*PWM_PINS); i++) {
     analogWriteFrequency(PWM_PINS[i], frequency);
   }
 
   // assign 0x2d as i2c address if pin 2 not connected to gnd, 0x2e if pin 2 is connected to gnd
+  /*
   pinMode(2, INPUT_PULLUP);
   if (digitalRead(2)) {
     registerSlave.listen(0x2d);
   } else {
     registerSlave.listen(0x2e);
   }
-  analogWriteResolution(15);
+  */
+  registerSlave.listen(0x2d);
+  
+  analogWriteResolution(bit_resolution);
   analogWrite(PWM_PINS[0], thruster_registers.thruster_reg_0);
 
 
@@ -66,6 +71,9 @@ void setup() {
   Serial.begin(9600);
   Serial.println("Registers: 0, 2, 4, 6");
 
+  Serial.println("Default duty cycle val:");
+  Serial.println(default_duty_cycle_val);
+
   Serial.println("thruster reg 0:");
   Serial.println(thruster_registers.thruster_reg_0);
 
@@ -82,6 +90,10 @@ void setup() {
 }
 
 void loop() {
+  digitalWrite(LED_BUILTIN, HIGH);
+  delay(1000);
+  digitalWrite(LED_BUILTIN, LOW);
+  delay(1000);
 }
 
 void on_write_isr(uint8_t reg_num, size_t num_bytes) {
