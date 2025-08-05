@@ -17,9 +17,9 @@ int MAX_PWM_WIDTH = 1700; // actual max on t200 thruster datasheet is 1900
 // Thruster registers (caller writes to them)
 struct ThrusterRegisters {
   uint16_t thruster_reg_0 = default_duty_cycle_val;  // Register 0
+  uint16_t thruster_reg_1 = default_duty_cycle_val;  // Register 1
   uint16_t thruster_reg_2 = default_duty_cycle_val;  // Register 2
-  uint16_t thruster_reg_4 = default_duty_cycle_val;  // Register 4
-  uint16_t thruster_reg_6 = default_duty_cycle_val;  // Register 6
+  uint16_t thruster_reg_3 = default_duty_cycle_val;  // Register 3
 };
 // TODO
 // Config registers
@@ -30,7 +30,7 @@ struct Config {
 
 ThrusterRegisters thruster_registers;
 Config config;
-I2CRegisterSlave registerSlave = I2CRegisterSlave(Slave1, (uint8_t*)&thruster_registers, sizeof(thruster_registers), (uint8_t*)&config, sizeof(config));
+I2CRegisterSlave registerSlave = I2CRegisterSlave(Slave1, (uint16_t*)&thruster_registers, sizeof(thruster_registers), (uint16_t*)&config, sizeof(config));
 
 // Callback
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
@@ -61,18 +61,18 @@ void setup() {
   analogWrite(PWM_PINS[0], thruster_registers.thruster_reg_0);
 
 
-  analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_2);
+  analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_1);
 
 
-  analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_4);
+  analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_2);
 
-  analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_6);
+  analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_3);
 
 
   // Start listening
   registerSlave.after_write(on_write_isr);
 
-  Serial.println("Registers: 0, 2, 4, 6");
+  Serial.println("Registers: 0, 1, 2, 3");
 
   Serial.println("Default duty cycle val:");
   Serial.println(default_duty_cycle_val);
@@ -80,19 +80,21 @@ void setup() {
   Serial.println("thruster reg 0:");
   Serial.println(thruster_registers.thruster_reg_0);
 
+  Serial.println("thruster reg 1:");
+  Serial.println(thruster_registers.thruster_reg_1);
+
   Serial.println("thruster reg 2:");
   Serial.println(thruster_registers.thruster_reg_2);
 
-  Serial.println("thruster reg 4:");
-  Serial.println(thruster_registers.thruster_reg_4);
-
-  Serial.println("thruster reg 6:");
-  Serial.println(thruster_registers.thruster_reg_6);
+  Serial.println("thruster reg 3:");
+  Serial.println(thruster_registers.thruster_reg_3);
 
 
 }
 
 void loop() {
+
+  // Indicator light
   digitalWrite(LED_BUILTIN, HIGH);
   delay(1000);
   digitalWrite(LED_BUILTIN, LOW);
