@@ -24,8 +24,8 @@ struct ThrusterRegisters {
 // TODO
 // Config registers
 struct Config {
-  uint16_t frequency = 333;     // Register 8
-  uint8_t bit_resolution = 8;  // Register 10
+  uint16_t frequency = 333;     // Register 4
+  uint16_t bit_resolution = 8;  // Register 5
 };
 
 ThrusterRegisters thruster_registers;
@@ -41,7 +41,7 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
   for (unsigned int i = 0; i < sizeof(PWM_PINS) / sizeof(*PWM_PINS); i++) {
-    analogWriteFrequency(PWM_PINS[i], frequency);
+    analogWriteFrequency(PWM_PINS[i], config.frequency);
   }
 
   // !!! FIXME: this mechanism does not seem to be working for some reason
@@ -57,7 +57,7 @@ void setup() {
   registerSlave.listen(0x2d);
 
   
-  analogWriteResolution(bit_resolution);
+  analogWriteResolution(config.bit_resolution);
   analogWrite(PWM_PINS[0], thruster_registers.thruster_reg_0);
 
 
