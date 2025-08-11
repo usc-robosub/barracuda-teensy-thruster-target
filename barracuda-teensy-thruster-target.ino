@@ -108,20 +108,20 @@ void on_write_isr(uint8_t reg_num, size_t num_bytes) {
       Serial.println("Thruster reg 0 written to: ");
       Serial.println(thruster_registers.thruster_reg_0);
       break;
+    case 1:
+      Serial.println("Thruster reg 1 written to: ");
+      analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_1);
+      Serial.println(thruster_registers.thruster_reg_1);
+      break;
     case 2:
       Serial.println("Thruster reg 2 written to: ");
-      analogWrite(PWM_PINS[1], thruster_registers.thruster_reg_2);
+      analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_2);
       Serial.println(thruster_registers.thruster_reg_2);
       break;
-    case 4:
-      Serial.println("Thruster reg 4 written to: ");
-      analogWrite(PWM_PINS[2], thruster_registers.thruster_reg_4);
-      Serial.println(thruster_registers.thruster_reg_4);
-      break;
-    case 6:
-      Serial.println("Thruster reg 6 written to: ");
-      analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_6);
-      Serial.println(thruster_registers.thruster_reg_6);
+    case 3:
+      Serial.println("Thruster reg 3 written to: ");
+      analogWrite(PWM_PINS[3], thruster_registers.thruster_reg_3);
+      Serial.println(thruster_registers.thruster_reg_3);
       break;
     default:
       Serial.println("Bad register");
