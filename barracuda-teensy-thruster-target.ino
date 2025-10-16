@@ -1,21 +1,14 @@
 #include <Arduino.h>
 #include <i2c_register_slave.h>
+#include <cmath>
 
-int PWM_PINS[] = {0, 1, 4, 5};
+#include "barracuda-teensy.h"
 
-// Config registers
-struct Config {
-  uint16_t freq = 333;                       // Register 8
-  uint16_t bit_res = 8;                      // Register 10
-  uint16_t t200_init = 1500;                 // Register 12
-};
-Config config;
-
-// Thruster registers (registers 0, 2 , 4, 6)
-uint16_t thruster_registers[sizeof(PWM_PINS) / sizeof(*PWM_PINS)];
+// Thruster registers (registers 0, 4, 8, 12)
+float thruster_registers[NTHRUSTERS];
 
 I2CRegisterSlave registerSlave = I2CRegisterSlave(
-    Slave1, (uint8_t *)&thruster_registers, sizeof(thruster_registers), (uint8_t *)&config, sizeof(config));
+    Slave1, (uint8_t *)&thruster_registers, sizeof(thruster_registers), nullptr, 0);
 
 // Callback
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
@@ -24,19 +17,15 @@ void setup() {
   // Enable the serial port for debugging
   Serial.begin(9600);
 
-  double period = (double)1 / config.freq;
-  int default_duty_cycle_val =
-      (((double)config.t200_init / 1000000) / period) *
-      pow(2, config.bit_res);
-  for (size_t i = 0;
-       i < sizeof(thruster_registers) / sizeof(*thruster_registers); i++) {
-    thruster_registers[i] = default_duty_cycle_val;
+  pinMode(LED_BUILTIN, OUTPUT);
+
+  for (float &t : thruster_registers) {
+    t = INIT_DC;
   }
 
-  pinMode(LED_BUILTIN, OUTPUT);
-  analogWriteResolution(config.bit_res);
-  for (size_t i = 0; i < sizeof(PWM_PINS) / sizeof(*PWM_PINS); i++) {
-    analogWriteFrequency(PWM_PINS[i], config.freq);
+  analogWriteResolution(PWM_BIT_RES);
+  for (size_t i = 0; i < NTHRUSTERS; i++) {
+    analogWriteFrequency(PWM_PINS[i], PWM_FREQ);
     analogWrite(PWM_PINS[i], thruster_registers[i]);
   }
 
@@ -54,23 +43,13 @@ void setup() {
 
   // Start listening
   registerSlave.after_write(on_write_isr);
-  registerSlave.after_read(on_read_isr);
 
+  Serial.println("Init duty cycle:");
+  Serial.println(INIT_DC);
 
-  Serial.println("Default duty cycle val:");
-  Serial.println(default_duty_cycle_val);
-
-  Serial.println("thruster reg 0:");
-  Serial.println(thruster_registers[0]);
-
-  Serial.println("thruster reg 1:");
-  Serial.println(thruster_registers[1]);
-
-  Serial.println("thruster reg 2:");
-  Serial.println(thruster_registers[2]);
-
-  Serial.println("thruster reg 3:");
-  Serial.println(thruster_registers[3]);
+  for (int i = 0; i < NTHRUSTERS; i++) {
+    Serial.printf("thruster reg %d: %f", i, thruster_registers[i]);
+  }
 }
 
 void loop() {
@@ -80,46 +59,45 @@ void loop() {
   delay(1000);
 }
 
+uint16_t f_to_dc(float force) {
+  if (force == 0) return INIT_DC;
+  if (force <= f_vals[0]) return dc_vals[0];
+  if (force >= f_vals[LUT_LEN - 1]) return dc_vals[LUT_LEN - 1];
+
+  // binary search
+  int lo = 0;
+  int hi = LUT_LEN - 1;
+  int mid;
+  while (hi - lo > 1) {
+    mid = (lo + hi) / 2;
+    if (force == f_vals[mid]) return dc_vals[mid];
+    if (force < f_vals[mid]) hi = mid;
+    if (force > f_vals[mid]) lo = mid;
+  }
+  return (fabsf(force - f_vals[lo]) < fabsf(force - f_vals[hi])) ? dc_vals[lo] : dc_vals[hi];
+}
+
+void handle_thruster(int thruster_idx) {
+  analogWrite(PWM_PINS[thruster_idx], f_to_dc(thruster_registers[thruster_idx]));
+  Serial.printf("Thruster reg % written to: ", thruster_idx);
+  Serial.println(thruster_registers[thruster_idx]);
+}
+
 void on_write_isr(uint8_t reg_num, size_t num_bytes) {
   switch (reg_num) {
   case 0:
-    analogWrite(PWM_PINS[0], thruster_registers[0]);
-    Serial.println("Thruster reg 0 written to: ");
-    Serial.println(thruster_registers[0]);
-    break;
-  case 2:
-    Serial.println("Thruster reg 1 written to: ");
-    analogWrite(PWM_PINS[1], thruster_registers[1]);
-    Serial.println(thruster_registers[1]);
+    handle_thruster(0);
     break;
   case 4:
-    Serial.println("Thruster reg 2 written to: ");
-    analogWrite(PWM_PINS[2], thruster_registers[2]);
-    Serial.println(thruster_registers[2]);
+    handle_thruster(1);
     break;
-  case 6:
-    Serial.println("Thruster reg 3 written to: ");
-    analogWrite(PWM_PINS[3], thruster_registers[3]);
-    Serial.println(thruster_registers[3]);
+  case 8:
+    handle_thruster(2);
+    break;
+  case 12:
+    handle_thruster(3);
     break;
   default:
     Serial.println("Non-thruster register");
-  }
-}
-
-void on_read_isr(uint8_t reg_num) {
-  switch (reg_num) {
-    case 8:
-      Serial.println("reg 0 read from");
-      Serial.println(config.freq);
-      break;
-    case 10:
-      Serial.println("reg 2 read from");
-      Serial.println(config.bit_res);
-      break;
-    case 12:
-      Serial.println("reg 4 read from");
-      Serial.println(config.t200_init);
-      break;
   }
 }
