@@ -20,13 +20,13 @@ void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
 
   for (float &t : thruster_registers) {
-    t = INIT_DC;
+    t = 0;
   }
 
   analogWriteResolution(PWM_BIT_RES);
   for (size_t i = 0; i < NTHRUSTERS; i++) {
     analogWriteFrequency(PWM_PINS[i], PWM_FREQ);
-    analogWrite(PWM_PINS[i], thruster_registers[i]);
+    analogWrite(PWM_PINS[i], f_to_dc(thruster_registers[i]));
   }
 
   // assign 0x2e as i2c address if pin 2 not connected to gnd, 0x2d if pin 2 is
@@ -44,11 +44,10 @@ void setup() {
   // Start listening
   registerSlave.after_write(on_write_isr);
 
-  Serial.println("Init duty cycle:");
-  Serial.println(INIT_DC);
+  Serial.printf("Init duty cycle : %d\n", INIT_DC);
 
   for (int i = 0; i < NTHRUSTERS; i++) {
-    Serial.printf("thruster reg %d: %f", i, thruster_registers[i]);
+    Serial.printf("thruster reg %d: %f, dc: %d\n", i, thruster_registers[i], f_to_dc(thruster_registers[i]));
   }
 }
 
@@ -79,7 +78,7 @@ uint16_t f_to_dc(float force) {
 
 void handle_thruster(int thruster_idx) {
   analogWrite(PWM_PINS[thruster_idx], f_to_dc(thruster_registers[thruster_idx]));
-  Serial.printf("Thruster reg % written to: ", thruster_idx);
+  Serial.printf("Thruster reg % written to: \n", thruster_idx);
   Serial.println(thruster_registers[thruster_idx]);
 }
 
