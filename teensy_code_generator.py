@@ -42,8 +42,8 @@ teensy_dc_vals = [dc for dc in range(2**TEENSY_PWM_BIT_RES) if T200_MIN_PW <= dc
 teensy_pw_vals = [dc_to_us(dc) for dc in teensy_dc_vals]
 teensy_f_vals = [pw_to_f(pw) for pw in teensy_pw_vals]
 
-# for dc, pw, f in zip(teensy_dc_vals, teensy_pw_vals, teensy_f_vals):
-#     print(dc, pw, f)
+for dc, pw, f in zip(teensy_dc_vals, teensy_pw_vals, teensy_f_vals):
+    print(dc, pw, f)
 
 
 out = f'''\

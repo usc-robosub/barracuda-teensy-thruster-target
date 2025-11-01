@@ -4,11 +4,19 @@
 
 #include "barracuda-teensy.h"
 
-// Thruster registers (registers 0, 4, 8, 12)
-float thruster_registers[NTHRUSTERS];
+int idx_offset = 0;
 
+struct Registers {
+  // Thruster registers (registers 0, 4, 8, 12)
+  float thruster_forces[NTHRUSTERS] = {0, 0, 0, 0};
+
+  // Killswitch register (register 16)
+  char killed = '1';
+};
+
+Registers registers;
 I2CRegisterSlave registerSlave = I2CRegisterSlave(
-    Slave1, (uint8_t *)&thruster_registers, sizeof(thruster_registers), nullptr, 0);
+    Slave1, (uint8_t *)&registers, sizeof(registers), nullptr, 0);
 
 // Callback
 void on_write_isr(uint8_t reg_num, size_t num_bytes);
@@ -19,14 +27,10 @@ void setup() {
 
   pinMode(LED_BUILTIN, OUTPUT);
 
-  for (float &t : thruster_registers) {
-    t = 0;
-  }
-
   analogWriteResolution(PWM_BIT_RES);
   for (size_t i = 0; i < NTHRUSTERS; i++) {
     analogWriteFrequency(PWM_PINS[i], PWM_FREQ);
-    analogWrite(PWM_PINS[i], f_to_dc(thruster_registers[i]));
+    analogWrite(PWM_PINS[i], INIT_DC);
   }
 
   // assign 0x2e as i2c address if pin 2 not connected to gnd, 0x2d if pin 2 is
@@ -36,6 +40,7 @@ void setup() {
   if (digitalRead(2)) {
     registerSlave.listen(0x2e);
     Serial.println("2E");
+    idx_offset = 4;
   } else {
     registerSlave.listen(0x2d);
     Serial.println("2D");
@@ -47,7 +52,7 @@ void setup() {
   Serial.printf("Init duty cycle : %d\n", INIT_DC);
 
   for (int i = 0; i < NTHRUSTERS; i++) {
-    Serial.printf("thruster reg %d: %f, dc: %d\n", i, thruster_registers[i], f_to_dc(thruster_registers[i]));
+    Serial.printf("thruster reg %d: %f, dc: %d\n", i, registers.thruster_forces[i], f_to_dc(registers.thruster_forces[i]));
   }
 }
 
@@ -77,26 +82,39 @@ uint16_t f_to_dc(float force) {
 }
 
 void handle_thruster(int thruster_idx) {
-  analogWrite(PWM_PINS[thruster_idx], f_to_dc(thruster_registers[thruster_idx]));
-  Serial.printf("Thruster reg % written to: \n", thruster_idx);
-  Serial.println(thruster_registers[thruster_idx]);
+  uint16_t dc = f_to_dc(registers.thruster_forces[thruster_idx]);
+  analogWrite(PWM_PINS[thruster_idx], dc);
+  Serial.printf("reg %d (thruster %d): force %f, dc %d\r\n", thruster_idx, thruster_idx + idx_offset, registers.thruster_forces[thruster_idx], dc);
 }
 
 void on_write_isr(uint8_t reg_num, size_t num_bytes) {
-  switch (reg_num) {
-  case 0:
-    handle_thruster(0);
-    break;
-  case 4:
-    handle_thruster(1);
-    break;
-  case 8:
-    handle_thruster(2);
-    break;
-  case 12:
-    handle_thruster(3);
-    break;
-  default:
-    Serial.println("Non-thruster register");
+
+  // Killswitch reg was written to: reinit thrusters both on closing and opening of killswitch latch
+  if (reg_num == 16) {
+    Serial.printf("%c written to killed reg\r\n", registers.killed);
+    for (size_t i = 0; i < NTHRUSTERS; i++) {
+      analogWrite(PWM_PINS[i], INIT_DC);
+    }
+    return;
+  }
+
+  if (registers.killed == '0') {
+    switch (reg_num) {
+      case 0:
+        handle_thruster(0);
+        break;
+      case 4:
+        handle_thruster(1);
+        break;
+      case 8:
+        handle_thruster(2);
+        break;
+      case 12:
+        handle_thruster(3);
+        break;
+
+      default:
+        Serial.println("Not a valid register");
+    }
   }
 }
